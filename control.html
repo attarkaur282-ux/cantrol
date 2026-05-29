@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Admin Control Panel - Number Info PRO</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;min-height:100vh;background:#0a0a0a;color:#00ff00;display:flex;justify-content:center;align-items:center;padding:20px}
+.card{background:rgba(0,0,0,0.9);border:2px solid #00ff00;border-radius:30px;padding:35px 25px;max-width:650px;width:100%;box-shadow:0 0 30px rgba(0,255,0,0.3);backdrop-filter:blur(10px)}
+h1{text-align:center;font-size:28px;margin-bottom:10px;background:linear-gradient(135deg,#00ff00,#00cc00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{text-align:center;font-size:14px;opacity:0.7;margin-bottom:25px}
+input,select,textarea{width:100%;padding:14px 18px;margin:12px 0;border:2px solid #00ff00;border-radius:50px;font-size:16px;outline:none;background:#0a0a0a;color:#00ff00;font-family:'Courier New',monospace}
+textarea{border-radius:20px;resize:vertical}
+button{width:100%;padding:14px;margin:10px 0;font-size:18px;font-weight:bold;border-radius:50px;background:#0a0a0a;border:2px solid #00ff00;color:#00ff00;cursor:pointer;transition:all 0.3s}
+button:hover{background:#00ff00;color:#000;box-shadow:0 0 20px rgba(0,255,0,0.6)}
+.result-box{background:rgba(0,255,0,0.05);border:1px solid rgba(0,255,0,0.3);border-radius:20px;padding:20px;margin:15px 0;text-align:center}
+.follower-count{font-size:36px;font-weight:bold;color:#00ff00;text-shadow:0 0 10px rgba(0,255,0,0.5)}
+.button-row{display:flex;gap:10px}
+.button-row button{flex:1}
+.error-msg{color:#ff4444;text-align:center;margin:10px 0;font-size:14px}
+.success-msg{color:#00ff00;text-align:center;margin:10px 0;font-size:14px}
+.footer{text-align:center;margin-top:20px;font-size:11px;opacity:0.5}
+.scan-line{position:fixed;top:0;left:0;width:100%;height:2px;background:rgba(0,255,0,0.3);z-index:10000;pointer-events:none;animation:scanDown 4s linear infinite}
+@keyframes scanDown{0%{top:-2px}100%{top:100%}}
+.section-title{color:gold;margin:20px 0 10px;font-size:18px;border-top:1px solid rgba(255,215,0,0.3);padding-top:15px;text-align:center}
+.detail-row{background:rgba(255,255,255,0.03);padding:10px;margin:5px 0;border-radius:10px;font-size:14px;word-break:break-all}
+.ban-timer{color:#ff4444;font-weight:bold;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.5}}
+.tab-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{flex:1;min-width:70px;padding:10px 5px;font-size:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);border-radius:50px;cursor:pointer;color:#fff;text-align:center;margin:0}
+.tab-btn.active{background:linear-gradient(135deg,#4CAF50,#45a049);border-color:transparent}
+.scroll-box{max-height:300px;overflow-y:auto;margin:10px 0}
+.password-highlight{color:#ff9800;font-weight:bold;font-size:16px}
+.copy-btn{background:gold!important;color:#000!important;width:auto!important;padding:8px 20px!important;font-size:12px!important;border:none!important;margin:5px!important}
+.filter-row{display:flex;gap:10px;margin-bottom:15px}
+.filter-row select,.filter-row button{flex:1;margin:0}
+</style>
+</head>
+<body>
+
+<div class="scan-line"></div>
+
+<div class="card">
+    <h1>⚙️ Admin Control Panel</h1>
+    <div class="subtitle">Full Database Control (Owner Only)</div>
+
+    <!-- TABS -->
+    <div class="tab-row">
+        <button class="tab-btn active" onclick="switchAdminTab('boost')">👥 Booster</button>
+        <button class="tab-btn" onclick="switchAdminTab('ban')">🚫 Ban</button>
+        <button class="tab-btn" onclick="switchAdminTab('users')">📋 Users</button>
+        <button class="tab-btn" onclick="switchAdminTab('lookup')">🔍 Lookup</button>
+        <button class="tab-btn" onclick="switchAdminTab('password')">🔑 Password</button>
+        <button class="tab-btn" onclick="switchAdminTab('admin')">👑 Admin</button>
+        <button class="tab-btn" onclick="switchAdminTab('announce')">📢 Announce</button>
+        <button class="tab-btn" onclick="switchAdminTab('fakeusers')">🤖 Fake Users</button>
+    </div>
+
+    <!-- BOOST TAB -->
+    <div id="tab-boost">
+        <input type="text" id="userInput" placeholder="Enter Username or User ID" autocomplete="off">
+        <button onclick="lookupUser()">🔍 Lookup User</button>
+        <div id="resultSection" style="display:none;">
+            <div class="result-box">
+                <div class="user-info">
+                    <span id="displayName"></span>
+                    <span id="displayBadge" style="color:gold;"></span>
+                    <span id="displayBanBadge" class="ban-timer"></span>
+                </div>
+                <div>🆔 ID: <strong id="displayId"></strong></div>
+                <div style="margin:15px 0;">
+                    <div class="follower-count" id="followerCount">0</div>
+                    <div style="opacity:0.7;">Followers</div>
+                </div>
+            </div>
+            <div class="button-row">
+                <button onclick="addFollowers()" style="border-color:#00ff00;">➕ Add</button>
+                <button onclick="removeFollowers()" style="border-color:#ff4444;color:#ff4444;">➖ Remove</button>
+            </div>
+            <input type="number" id="followerAmount" placeholder="How many? (default 1)" min="1" value="1">
+        </div>
+    </div>
+
+    <!-- BAN TAB -->
+    <div id="tab-ban" style="display:none;">
+        <div class="section-title">🚫 Ban User</div>
+        <input type="text" id="banUserId" placeholder="User ID to ban">
+        <input type="number" id="banDuration" placeholder="Duration (hours)" min="1" value="24">
+        <button onclick="banUser()" style="border-color:#ff4444;color:#ff4444;">🔨 Ban User</button>
+        <div id="banMsg"></div>
+        <div class="section-title">🔓 Unban User</div>
+        <input type="text" id="unbanUserId" placeholder="User ID to unban">
+        <button onclick="unbanUser()" style="border-color:#00ff00;">✅ Unban User</button>
+        <div id="unbanMsg"></div>
+        <div class="section-title">📋 Banned Users</div>
+        <div class="scroll-box" id="bannedUsersList"></div>
+        <button onclick="loadBannedUsers()">🔄 Refresh</button>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="tab-users" style="display:none;">
+        <div class="section-title">👥 All Registered Users</div>
+        <div class="filter-row">
+            <select id="userFilter" onchange="loadAllUsers()">
+                <option value="all">All Users</option>
+                <option value="admin">Admins Only</option>
+                <option value="normal">Normal Users</option>
+                <option value="banned">Banned Only</option>
+            </select>
+            <button onclick="loadAllUsers()">🔄 Refresh</button>
+        </div>
+        <div class="scroll-box" id="allUsersList"></div>
+    </div>
+
+    <!-- LOOKUP TAB -->
+    <div id="tab-lookup" style="display:none;">
+        <div class="section-title">🔍 View Full User Details</div>
+        <input type="text" id="lookupUserId" placeholder="Enter User ID">
+        <button onclick="viewUserDetails()">👁️ Show All Information</button>
+        <div id="userDetailsResult"></div>
+    </div>
+
+    <!-- PASSWORD TAB -->
+    <div id="tab-password" style="display:none;">
+        <div class="section-title">🔑 Quick Password Check</div>
+        <input type="text" id="passwordCheckUserId" placeholder="Enter User ID">
+        <button onclick="checkPassword()">👁️ Reveal Password</button>
+        <div id="passwordCheckResult"></div>
+    </div>
+
+    <!-- ADMIN TAB -->
+    <div id="tab-admin" style="display:none;">
+        <div class="section-title">👑 Promote to Admin</div>
+        <input type="text" id="promoteUserId" placeholder="Enter User ID to make Admin">
+        <button onclick="promoteToAdmin()" style="border-color:gold;color:gold;">⬆️ Make Admin</button>
+        <div id="promoteMsg"></div>
+        <div class="section-title">🔽 Demote from Admin</div>
+        <input type="text" id="demoteUserId" placeholder="Enter Admin User ID to demote">
+        <button onclick="demoteFromAdmin()" style="border-color:#ff4444;color:#ff4444;">⬇️ Remove Admin</button>
+        <div id="demoteMsg"></div>
+        <div class="section-title">👑 Current Admins</div>
+        <div class="scroll-box" id="adminList"></div>
+        <button onclick="loadAdmins()">🔄 Refresh</button>
+    </div>
+
+    <!-- ANNOUNCEMENT TAB -->
+    <div id="tab-announce" style="display:none;">
+        <div class="section-title">📢 Broadcast Announcement</div>
+        <textarea id="announcementText" placeholder="Type your announcement message here..." rows="4"></textarea>
+        <button onclick="setAnnouncement()">📢 Send Announcement to All Users</button>
+        <button onclick="clearAnnouncement()" style="border-color:#ff4444;color:#ff4444;">🗑️ Remove Current Announcement</button>
+        <div id="announceMsg"></div>
+        <div class="section-title">Current Active Announcement</div>
+        <div id="currentAnnouncement" style="word-break:break-word;padding:10px;background:rgba(255,215,0,0.1);border-radius:10px;margin:10px 0;">No active announcement</div>
+    </div>
+
+    <!-- FAKE USERS TAB -->
+    <div id="tab-fakeusers" style="display:none;">
+        <div class="section-title">🤖 Generate Fake Users</div>
+        <input type="number" id="fakeUserCount" placeholder="Number of fake users (e.g., 10)" min="1" value="10">
+        <button onclick="generateFakeUsers()">🎲 Generate Fake Users</button>
+        <div id="fakeMsg"></div>
+        <div class="section-title">📋 Generated Users List (Login Ready)</div>
+        <div class="scroll-box" id="fakeUsersList"></div>
+        <p style="font-size:11px;opacity:0.7;">These users can log in on the main website with the shown username and password.</p>
+    </div>
+
+    <div id="messageBox"></div>
+    <div class="footer">⚡ Direct database access | Owner Panel</div>
+</div>
+
+<script>
+// ==================== DATABASE ====================
+const DB_KEY = 'numberInfoDB';
+function getDB() {
+    let db = localStorage.getItem(DB_KEY);
+    if (!db) {
+        db = {
+            users: {
+                "1": { userId: "1", email: "admin@pro.com", username: "index.india", password: "index.india", coins: 999999, followers: [], following: [], isAdmin: true, createdAt: new Date().toISOString(), dp: "" },
+                "11111111": { userId: "11111111", email: "demo@test.com", username: "demo", password: "demo123", coins: 50, followers: [], following: [], createdAt: new Date().toISOString(), dp: "" }
+            },
+            userIdCounter: 11111111,
+            emails: { "admin@pro.com": "1", "demo@test.com": "11111111" },
+            messages: {}, chats: {}, bans: {}, announcement: null
+        };
+        saveDB(db);
+    }
+    return JSON.parse(localStorage.getItem(DB_KEY));
+}
+function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+let currentLookupUser = null;
+
+// ==================== BAN UTILS ====================
+function isBanned(userId) { let db = getDB(); if (!db.bans || !db.bans[userId]) return false; if (Date.now() >= db.bans[userId]) { delete db.bans[userId]; saveDB(db); return false; } return true; }
+function getBanRemaining(userId) { let db = getDB(); if (!db.bans || !db.bans[userId]) return 0; let remain = db.bans[userId] - Date.now(); return remain > 0 ? Math.ceil(remain / 1000) : 0; }
+function formatTime(seconds) { if (seconds <= 0) return "Expired"; let h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60; return h + 'h ' + m + 'm ' + s + 's'; }
+function showMessage(msg, type) { const box = document.getElementById('messageBox'); box.innerHTML = '<p class="' + type + '-msg">' + msg + '</p>'; setTimeout(() => box.innerHTML = '', 4000); }
+
+// ==================== TABS ====================
+function switchAdminTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-boost').style.display = tab === 'boost' ? 'block' : 'none';
+    document.getElementById('tab-ban').style.display = tab === 'ban' ? 'block' : 'none';
+    document.getElementById('tab-users').style.display = tab === 'users' ? 'block' : 'none';
+    document.getElementById('tab-lookup').style.display = tab === 'lookup' ? 'block' : 'none';
+    document.getElementById('tab-password').style.display = tab === 'password' ? 'block' : 'none';
+    document.getElementById('tab-admin').style.display = tab === 'admin' ? 'block' : 'none';
+    document.getElementById('tab-announce').style.display = tab === 'announce' ? 'block' : 'none';
+    document.getElementById('tab-fakeusers').style.display = tab === 'fakeusers' ? 'block' : 'none';
+    if (tab === 'ban') loadBannedUsers();
+    if (tab === 'users') loadAllUsers();
+    if (tab === 'admin') loadAdmins();
+    if (tab === 'announce') loadAnnouncement();
+    if (tab === 'fakeusers') loadLastGeneratedUsers();
+}
+
+// ==================== BOOSTER ====================
+function lookupUser() {
+    const input = document.getElementById('userInput').value.trim();
+    if (!input) { showMessage('❌ Please enter a username or User ID', 'error'); return; }
+    const db = getDB();
+    let user = db.users[input];
+    if (!user) { for (let uid in db.users) { if (db.users[uid].username.toLowerCase() === input.toLowerCase()) { user = db.users[uid]; break; } } }
+    if (!user) { showMessage('⚠️ User not found!', 'error'); document.getElementById('resultSection').style.display = 'none'; currentLookupUser = null; return; }
+    currentLookupUser = user;
+    document.getElementById('displayName').innerText = user.username;
+    document.getElementById('displayBadge').innerText = user.isAdmin ? '👑' : '';
+    let banBadge = document.getElementById('displayBanBadge');
+    if (isBanned(user.userId)) { banBadge.innerText = ' ⛔ BANNED (' + formatTime(getBanRemaining(user.userId)) + ' remaining)'; }
+    else { banBadge.innerText = ''; }
+    document.getElementById('displayId').innerText = user.userId;
+    document.getElementById('followerCount').innerText = (user.followers || []).length;
+    document.getElementById('resultSection').style.display = 'block';
+    document.getElementById('messageBox').innerHTML = '';
+}
+function addFollowers() {
+    if (!currentLookupUser) { showMessage('⚠️ Lookup a user first!', 'error'); return; }
+    const amount = parseInt(document.getElementById('followerAmount').value) || 1;
+    if (amount < 1) { showMessage('❌ Minimum 1 follower', 'error'); return; }
+    const db = getDB(); const user = db.users[currentLookupUser.userId];
+    if (!user.followers) user.followers = [];
+    for (let i = 0; i < amount; i++) { user.followers.push('boost_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)); }
+    saveDB(db); currentLookupUser = user;
+    document.getElementById('followerCount').innerText = user.followers.length;
+    showMessage('✅ Added ' + amount + ' follower(s)! Total: ' + user.followers.length, 'success');
+}
+function removeFollowers() {
+    if (!currentLookupUser) { showMessage('⚠️ Lookup a user first!', 'error'); return; }
+    const amount = parseInt(document.getElementById('followerAmount').value) || 1;
+    if (amount < 1) { showMessage('❌ Minimum 1 follower', 'error'); return; }
+    const db = getDB(); const user = db.users[currentLookupUser.userId];
+    if (!user.followers || user.followers.length === 0) { showMessage('⚠️ User has no followers to remove', 'error'); return; }
+    const removeCount = Math.min(amount, user.followers.length);
+    user.followers = user.followers.slice(0, user.followers.length - removeCount);
+    saveDB(db); currentLookupUser = user;
+    document.getElementById('followerCount').innerText = user.followers.length;
+    showMessage('❌ Removed ' + removeCount + ' follower(s)! Remaining: ' + user.followers.length, 'success');
+}
+
+// ==================== BAN SYSTEM ====================
+function banUser() {
+    let uid = document.getElementById('banUserId').value.trim(), hours = parseInt(document.getElementById('banDuration').value) || 24;
+    if (!uid) { document.getElementById('banMsg').innerHTML = '<p class="error-msg">❌ Enter User ID</p>'; return; }
+    let db = getDB();
+    if (!db.users[uid]) { document.getElementById('banMsg').innerHTML = '<p class="error-msg">❌ User not found!</p>'; return; }
+    if (db.users[uid].isAdmin) { document.getElementById('banMsg').innerHTML = '<p class="error-msg">❌ Cannot ban an Admin!</p>'; return; }
+    if (!db.bans) db.bans = {};
+    db.bans[uid] = Date.now() + (hours * 60 * 60 * 1000); saveDB(db);
+    document.getElementById('banMsg').innerHTML = '<p class="success-msg">✅ ' + db.users[uid].username + ' (ID: ' + uid + ') banned for ' + hours + ' hours!</p>';
+    document.getElementById('banUserId').value = ''; document.getElementById('banDuration').value = '24'; loadBannedUsers();
+}
+function unbanUser() {
+    let uid = document.getElementById('unbanUserId').value.trim();
+    if (!uid) { document.getElementById('unbanMsg').innerHTML = '<p class="error-msg">❌ Enter User ID</p>'; return; }
+    let db = getDB();
+    if (!db.bans || !db.bans[uid]) { document.getElementById('unbanMsg').innerHTML = '<p class="error-msg">⚠️ User is not banned!</p>'; return; }
+    delete db.bans[uid]; saveDB(db);
+    document.getElementById('unbanMsg').innerHTML = '<p class="success-msg">✅ User unbanned!</p>';
+    document.getElementById('unbanUserId').value = ''; loadBannedUsers();
+}
+function loadBannedUsers() {
+    let db = getDB(), div = document.getElementById('bannedUsersList');
+    if (!db.bans || Object.keys(db.bans).length === 0) { div.innerHTML = '<p style="text-align:center;opacity:0.5;">No banned users</p>'; return; }
+    let html = '', now = Date.now(), hasActive = false;
+    for (let uid in db.bans) {
+        if (db.bans[uid] > now) {
+            hasActive = true; let user = db.users[uid], username = user ? user.username : 'Unknown', remain = getBanRemaining(uid);
+            html += '<div class="detail-row">🆔 <strong>' + uid + '</strong> | 👤 ' + username + ' | <span class="ban-timer">⏳ ' + formatTime(remain) + ' remaining</span> <button onclick="unbanUserDirect(\'' + uid + '\')" style="width:auto;padding:5px 15px;font-size:12px;margin:5px 0;">Unban</button></div>';
+        }
+    }
+    div.innerHTML = hasActive ? html : '<p style="text-align:center;opacity:0.5;">No active bans</p>';
+}
+function unbanUserDirect(uid) { let db = getDB(); if (db.bans && db.bans[uid]) { delete db.bans[uid]; saveDB(db); loadBannedUsers(); showMessage('✅ User ' + uid + ' unbanned!', 'success'); } }
+
+// ==================== VIEW USERS ====================
+function loadAllUsers() {
+    let db = getDB(), div = document.getElementById('allUsersList'), filter = document.getElementById('userFilter').value;
+    if (!db || Object.keys(db.users).length === 0) { div.innerHTML = '<p style="text-align:center;opacity:0.5;">No users in database</p>'; return; }
+    let html = '';
+    for (let uid in db.users) {
+        let u = db.users[uid], banned = isBanned(uid);
+        if (filter === 'admin' && !u.isAdmin) continue;
+        if (filter === 'normal' && u.isAdmin) continue;
+        if (filter === 'banned' && !banned) continue;
+        let banInfo = banned ? '<span class="ban-timer"> ⛔ BANNED (' + formatTime(getBanRemaining(uid)) + ')</span>' : '';
+        html += '<div class="detail-row">🆔 <strong>' + u.userId + '</strong> | 👤 ' + u.username + ' ' + (u.isAdmin ? '👑' : '') + ' ' + banInfo + '<br>📧 ' + u.email + ' | 🪙 ' + u.coins + ' coins | 👥 ' + (u.followers || []).length + ' followers</div>';
+    }
+    div.innerHTML = html || '<p style="text-align:center;opacity:0.5;">No users match the filter.</p>';
+}
+
+// ==================== FULL DETAILS ====================
+function viewUserDetails() {
+    let uid = document.getElementById('lookupUserId').value.trim(), div = document.getElementById('userDetailsResult');
+    if (!uid) { div.innerHTML = '<p class="error-msg">❌ Enter User ID</p>'; return; }
+    let db = getDB(), user = db.users[uid];
+    if (!user) { div.innerHTML = '<p class="error-msg">❌ User not found!</p>'; return; }
+    let banned = isBanned(uid), banInfo = banned ? '<span class="ban-timer">⛔ BANNED - ' + formatTime(getBanRemaining(uid)) + ' remaining</span>' : '✅ Active';
+    div.innerHTML = '<div class="result-box" style="text-align:left;"><h3 style="text-align:center;">👤 ' + user.username + ' ' + (user.isAdmin ? '👑' : '') + '</h3>' +
+        '<div class="detail-row">🆔 <strong>User ID:</strong> ' + user.userId + '</div>' +
+        '<div class="detail-row">👤 <strong>Username:</strong> ' + user.username + '</div>' +
+        '<div class="detail-row">📧 <strong>Email:</strong> ' + user.email + '</div>' +
+        '<div class="detail-row">🔑 <strong>Password:</strong> <span class="password-highlight">' + user.password + '</span></div>' +
+        '<div class="detail-row">🪙 <strong>Coins:</strong> ' + user.coins + '</div>' +
+        '<div class="detail-row">👥 <strong>Followers:</strong> ' + (user.followers || []).length + '</div>' +
+        '<div class="detail-row">👣 <strong>Following:</strong> ' + (user.following || []).length + '</div>' +
+        '<div class="detail-row">📅 <strong>Created:</strong> ' + new Date(user.createdAt).toLocaleString() + '</div>' +
+        '<div class="detail-row">🚫 <strong>Status:</strong> ' + banInfo + '</div>' +
+        (user.dp ? '<div style="text-align:center;margin:10px 0;"><img src="' + user.dp + '" style="width:80px;height:80px;border-radius:50%;border:2px solid gold;object-fit:cover;"></div>' : '') + '</div>';
+}
+
+// ==================== PASSWORD CHECK ====================
+function checkPassword() {
+    let uid = document.getElementById('passwordCheckUserId').value.trim(), div = document.getElementById('passwordCheckResult');
+    if (!uid) { div.innerHTML = '<p class="error-msg">❌ Enter User ID</p>'; return; }
+    let db = getDB(), user = db.users[uid];
+    if (!user) { div.innerHTML = '<p class="error-msg">❌ User not found!</p>'; return; }
+    div.innerHTML = '<div class="result-box"><h3>🔑 Password Found</h3><p>👤 <strong>' + user.username + '</strong> (ID: ' + user.userId + ')</p><p>📧 ' + user.email + '</p><p>🔑 <span class="password-highlight">' + user.password + '</span></p><button class="copy-btn" onclick="copyPassword(\'' + user.password + '\')">📋 Copy Password</button></div>';
+}
+function copyPassword(pass) {
+    navigator.clipboard.writeText(pass).then(() => { showMessage('✅ Password copied!', 'success'); }).catch(() => {
+        let tempInput = document.createElement('input'); tempInput.value = pass; document.body.appendChild(tempInput); tempInput.select(); document.execCommand('copy'); document.body.removeChild(tempInput); showMessage('✅ Password copied!', 'success');
+    });
+}
+
+// ==================== ADMIN MANAGEMENT ====================
+function promoteToAdmin() {
+    let uid = document.getElementById('promoteUserId').value.trim();
+    if (!uid) { document.getElementById('promoteMsg').innerHTML = '<p class="error-msg">❌ Enter User ID</p>'; return; }
+    let db = getDB();
+    if (!db.users[uid]) { document.getElementById('promoteMsg').innerHTML = '<p class="error-msg">❌ User not found!</p>'; return; }
+    if (db.users[uid].isAdmin) { document.getElementById('promoteMsg').innerHTML = '<p class="error-msg">⚠️ Already an Admin!</p>'; return; }
+    db.users[uid].isAdmin = true; saveDB(db);
+    document.getElementById('promoteMsg').innerHTML = '<p class="success-msg">✅ ' + db.users[uid].username + ' (ID: ' + uid + ') is now an Admin! 👑</p>';
+    document.getElementById('promoteUserId').value = ''; loadAdmins();
+}
+function demoteFromAdmin() {
+    let uid = document.getElementById('demoteUserId').value.trim();
+    if (!uid) { document.getElementById('demoteMsg').innerHTML = '<p class="error-msg">❌ Enter User ID</p>'; return; }
+    let db = getDB();
+    if (!db.users[uid]) { document.getElementById('demoteMsg').innerHTML = '<p class="error-msg">❌ User not found!</p>'; return; }
+    if (uid === "1") { document.getElementById('demoteMsg').innerHTML = '<p class="error-msg">❌ Cannot demote Owner!</p>'; return; }
+    if (!db.users[uid].isAdmin) { document.getElementById('demoteMsg').innerHTML = '<p class="error-msg">⚠️ Not an Admin!</p>'; return; }
+    db.users[uid].isAdmin = false; saveDB(db);
+    document.getElementById('demoteMsg').innerHTML = '<p class="success-msg">✅ ' + db.users[uid].username + ' (ID: ' + uid + ') is no longer an Admin.</p>';
+    document.getElementById('demoteUserId').value = ''; loadAdmins();
+}
+function loadAdmins() {
+    let db = getDB(), div = document.getElementById('adminList'), html = '';
+    for (let uid in db.users) { if (db.users[uid].isAdmin) { html += '<div class="detail-row">🆔 ' + uid + ' | 👤 ' + db.users[uid].username + ' 👑</div>'; } }
+    div.innerHTML = html || '<p style="opacity:0.5;">No admins found</p>';
+}
+
+// ==================== ANNOUNCEMENT ====================
+function setAnnouncement() {
+    let text = document.getElementById('announcementText').value.trim();
+    if (!text) { document.getElementById('announceMsg').innerHTML = '<p class="error-msg">❌ Please enter a message</p>'; return; }
+    let db = getDB(); db.announcement = { text: text, timestamp: Date.now() }; saveDB(db);
+    document.getElementById('announceMsg').innerHTML = '<p class="success-msg">✅ Announcement broadcasted!</p>';
+    document.getElementById('announcementText').value = ''; loadAnnouncement();
+}
+function clearAnnouncement() { let db = getDB(); if (db.announcement) { delete db.announcement; saveDB(db); document.getElementById('announceMsg').innerHTML = '<p class="success-msg">✅ Announcement removed</p>'; loadAnnouncement(); } }
+function loadAnnouncement() {
+    let db = getDB(), div = document.getElementById('currentAnnouncement');
+    if (db && db.announcement) { div.innerHTML = '<div style="background:rgba(255,215,0,0.2);padding:10px;border-radius:10px;"><p><strong>📢 Active Announcement</strong> <span style="font-size:11px;">(' + new Date(db.announcement.timestamp).toLocaleString() + ')</span></p><p style="margin-top:5px;">' + db.announcement.text + '</p></div>'; }
+    else { div.innerHTML = '<p style="opacity:0.5;">No active announcement</p>'; }
+}
+
+// ==================== FAKE USER GENERATOR ====================
+function generateFakeUsers() {
+    let count = parseInt(document.getElementById('fakeUserCount').value) || 1;
+    if (count < 1) count = 1; if (count > 1000) { showMessage('❌ Max 1000 users', 'error'); return; }
+    let db = getDB();
+    if (!db.bans) db.bans = {}; if (!db.emails) db.emails = {}; if (!db.userIdCounter) db.userIdCounter = 11111111;
+    let generatedUsers = [], existingEmails = Object.values(db.emails), existingUsernames = Object.values(db.users).map(u => u.username.toLowerCase());
+    for (let i = 0; i < count; i++) {
+        let randomSuffix = Math.floor(Math.random() * 1000000), username = 'user' + randomSuffix, email = 'user' + randomSuffix + '@fake.com';
+        while (existingUsernames.includes(username.toLowerCase()) || existingEmails.includes(email)) { randomSuffix = Math.floor(Math.random() * 1000000); username = 'user' + randomSuffix; email = 'user' + randomSuffix + '@fake.com'; }
+        let password = 'pass' + randomSuffix, userId = (db.userIdCounter + 1 + i).toString();
+        db.users[userId] = { userId: userId, email: email, username: username, password: password, coins: 50, followers: [], following: [], isAdmin: false, createdAt: new Date().toISOString(), dp: '' };
+        db.emails[email] = userId;
+        existingUsernames.push(username.toLowerCase()); existingEmails.push(email);
+        generatedUsers.push({ userId, username, email, password });
+    }
+    db.userIdCounter += count; saveDB(db);
+    localStorage.setItem('lastGeneratedFakeUsers', JSON.stringify(generatedUsers));
+    document.getElementById('fakeMsg').innerHTML = '<p class="success-msg">✅ ' + count + ' fake users generated!</p>';
+    loadLastGeneratedUsers(); document.getElementById('fakeUserCount').value = 10;
+}
+function loadLastGeneratedUsers() {
+    let div = document.getElementById('fakeUsersList'), stored = localStorage.getItem('lastGeneratedFakeUsers');
+    if (stored) { let users = JSON.parse(stored), html = ''; users.forEach(u => { html += '<div class="detail-row">🆔 ' + u.userId + ' | 👤 ' + u.username + ' | 📧 ' + u.email + ' | 🔑 ' + u.password + '</div>'; }); div.innerHTML = html; }
+    else { div.innerHTML = '<p style="opacity:0.5;">No fake users generated yet.</p>'; }
+}
+
+// ==================== EVENTS ====================
+document.getElementById('userInput')?.addEventListener('keypress', function(e) { if (e.key === 'Enter') lookupUser(); });
+
+// ==================== INIT ====================
+window.addEventListener('load', () => {
+    loadAllUsers(); loadBannedUsers(); loadAdmins(); loadAnnouncement(); loadLastGeneratedUsers();
+});
+</script>
+</body>
+</html>
